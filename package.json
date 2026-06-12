@@ -11,7 +11,7 @@
     "dev": "concurrently -k -n server,web -c cyan,green \"npm:dev --workspace @pob-item-delta/server\" \"npm:dev --workspace @pob-item-delta/web\"",
     "build": "npm run build --workspace @pob-item-delta/shared && npm run build --workspace @pob-item-delta/server && npm run build --workspace @pob-item-delta/web",
     "typecheck": "npm run build --workspace @pob-item-delta/shared && npm run typecheck --workspace @pob-item-delta/server && npm run typecheck --workspace @pob-item-delta/web",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run build --workspace @pob-item-delta/shared && npm run test --workspaces --if-present",
     "lint": "npm run typecheck",
     "start": "npm run start --workspace @pob-item-delta/server",
     "start:local": "npm run build && npm start",
