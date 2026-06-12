@@ -1,0 +1,24 @@
+# Dependencies and builds
+node_modules/
+dist/
+build/
+coverage/
+
+# Local environment
+.env
+.env.*
+*.log
+
+# Temporary/local data
+tmp/
+temp/
+.cache/
+.playwright-cli/
+output/
+fixtures/private/
+fixtures/local/
+pob-user-data/
+
+# OS/editor
+.DS_Store
+Thumbs.db

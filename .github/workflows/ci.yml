@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows build and release preflight
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build app
+        run: npm run build
+
+      - name: Build lean release zip
+        run: npm run release:zip -- -SkipBuild
+
+      - name: Build portable Windows release zip
+        run: npm run release:zip:portable -- -SkipBuild
+
+      - name: Preflight lean release zip
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-ReleasePreflight.ps1
+
+      - name: Preflight portable Windows release zip
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-ReleasePreflight.ps1 -ZipPath "output/releases/PoB-Item-Delta-$version-portable-win-x64.zip"
+
+      - name: Check release readiness without remote probes
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-GitHubReleaseReadiness.ps1 -SkipRemote
+
+      - name: Print release asset summary
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Get-PoB-Item-Delta-ReleaseAssets.ps1
+
+      - name: Print GitHub release notes preview
+        run: npm run release:notes
+
+      - name: Print publish approval packet dry-run
+        run: npm run release:packet -- -SkipRemote

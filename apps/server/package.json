@@ -1,0 +1,27 @@
+{
+  "name": "@pob-item-delta/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src",
+    "inspect:item-report": "node dist/tools/inspectItemTextReport.js",
+    "inspect:coc-report": "node dist/tools/inspectCocValidationReport.js",
+    "inspect:build-report": "node dist/tools/inspectBuildValidationReport.js"
+  },
+  "dependencies": {
+    "@pob-item-delta/shared": "0.1.0",
+    "express": "^5.1.0",
+    "fast-xml-parser": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.2",
+    "tsx": "^4.20.6",
+    "vitest": "^4.0.15"
+  }
+}

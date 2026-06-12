@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Release and setup docs
+    url: https://github.com/Smellybum1/PoB-Item-Delta
+    about: Check README.md and docs/windows-launcher.md before filing setup issues.

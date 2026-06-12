@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PathOfBuilding2>
+  <Build className="Sorceress" ascendClassName="Stormweaver" level="94" mainSocketGroup="3">
+    <PlayerStat stat="AverageHit" value="29987.058816"/>
+    <PlayerStat stat="Speed" value="2.6625"/>
+    <PlayerStat stat="CritChance" value="92.352"/>
+    <PlayerStat stat="TotalDPS" value="79840.5440976"/>
+    <PlayerStat stat="CombinedDPS" value="79840.5440976"/>
+    <PlayerStat stat="ManaCost" value="69.611307420495"/>
+    <PlayerStat stat="ManaPerSecondCost" value="185.34010600707"/>
+    <PlayerStat stat="Str" value="12"/>
+    <PlayerStat stat="Dex" value="61"/>
+    <PlayerStat stat="Int" value="173"/>
+    <PlayerStat stat="Life" value="1"/>
+    <PlayerStat stat="ManaRegenRecovery" value="324.1"/>
+    <PlayerStat stat="Spirit" value="149"/>
+    <PlayerStat stat="SpiritUnreserved" value="1"/>
+    <PlayerStat stat="EnergyShield" value="5051"/>
+    <PlayerStat stat="FireResist" value="75"/>
+    <PlayerStat stat="ColdResist" value="75"/>
+    <PlayerStat stat="LightningResist" value="75"/>
+    <PlayerStat stat="ChaosResist" value="0"/>
+  </Build>
+  <Skills activeSkillSet="2">
+    <SkillSet id="1">
+      <Skill enabled="true"><Gem nameSpec="Unused Default Skill"/></Skill>
+    </SkillSet>
+    <SkillSet id="2">
+      <Skill enabled="true" mainActiveSkill="1"><Gem nameSpec="Spark"/></Skill>
+      <Skill enabled="true" mainActiveSkill="1"><Gem nameSpec="Frost Wall"/></Skill>
+      <Skill enabled="true" mainActiveSkill="1"><Gem nameSpec="Frostbolt"/></Skill>
+      <Skill enabled="true" mainActiveSkill="1"><Gem nameSpec="Comet"/></Skill>
+    </SkillSet>
+  </Skills>
+  <Items activeItemSet="2" useSecondWeaponSet="false">
+    <Item id="10">
+Rarity: RARE
+Dire Beam
+Gelid Staff
+Item Level: 79
+    </Item>
+    <Item id="11">
+Rarity: RARE
+Ghoul Choker
+Gold Amulet
+Item Level: 79
+    </Item>
+    <Item id="12">
+Rarity: UNIQUE
+Snakepit
+Pearl Ring
+Item Level: 80
+    </Item>
+    <Item id="15">
+Rarity: RARE
+Vengeance Halo
+Runeforged Sorcerous Tiara
+Item Level: 75
+    </Item>
+    <ItemSet title="Inactive" id="1">
+      <Slot name="Weapon 1" itemId="0"/>
+      <Slot name="Ring 1" itemId="0"/>
+    </ItemSet>
+    <ItemSet title="Default" id="2">
+      <Slot name="Weapon 1" itemId="10"/>
+      <Slot name="Weapon 2" itemId="0"/>
+      <Slot name="Weapon 1 Swap" itemId="0"/>
+      <Slot name="Weapon 2 Swap" itemId="0"/>
+      <Slot name="Helmet" itemId="15"/>
+      <Slot name="Body Armour" itemId="0"/>
+      <Slot name="Gloves" itemId="0"/>
+      <Slot name="Boots" itemId="0"/>
+      <Slot name="Belt" itemId="0"/>
+      <Slot name="Ring 1" itemId="12"/>
+      <Slot name="Ring 2" itemId="0"/>
+      <Slot name="Amulet" itemId="11"/>
+    </ItemSet>
+  </Items>
+  <Config activeConfigSet="1"/>
+  <Calcs>
+    <Input number="1" name="skill_number"/>
+  </Calcs>
+</PathOfBuilding2>

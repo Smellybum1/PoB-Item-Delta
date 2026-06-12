@@ -1,0 +1,30 @@
+{
+  "name": "pob-item-delta",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c cyan,green \"npm:dev --workspace @pob-item-delta/server\" \"npm:dev --workspace @pob-item-delta/web\"",
+    "build": "npm run build --workspace @pob-item-delta/shared && npm run build --workspace @pob-item-delta/server && npm run build --workspace @pob-item-delta/web",
+    "typecheck": "npm run build --workspace @pob-item-delta/shared && npm run typecheck --workspace @pob-item-delta/server && npm run typecheck --workspace @pob-item-delta/web",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run typecheck",
+    "start": "npm run start --workspace @pob-item-delta/server",
+    "start:local": "npm run build && npm start",
+    "release:zip": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/New-PoB-Item-Delta-Release.ps1",
+    "release:zip:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/New-PoB-Item-Delta-PortableRelease.ps1",
+    "release:notes": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Get-PoB-Item-Delta-GitHubReleaseNotes.ps1",
+    "release:packet": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Get-PoB-Item-Delta-PublishPacket.ps1",
+    "inspect:item-report": "npm run inspect:item-report --workspace @pob-item-delta/server --",
+    "inspect:coc-report": "npm run inspect:coc-report --workspace @pob-item-delta/server --",
+    "inspect:build-report": "npm run inspect:build-report --workspace @pob-item-delta/server --"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "typescript": "^5.9.3"
+  }
+}
