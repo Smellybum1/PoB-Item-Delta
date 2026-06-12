@@ -28,6 +28,23 @@ function Assert-ChildPath {
   }
 }
 
+function Get-Sha256Hex {
+  param([string]$Path)
+
+  $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+  $stream = [System.IO.File]::OpenRead($resolvedPath)
+  try {
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+      return (($sha256.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") }) -join "")
+    } finally {
+      $sha256.Dispose()
+    }
+  } finally {
+    $stream.Dispose()
+  }
+}
+
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $nodeVersionValue = if ($NodeVersion.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) { $NodeVersion } else { "v$NodeVersion" }
 $nodeZipName = "node-$nodeVersionValue-win-x64.zip"
@@ -59,7 +76,7 @@ if (-not $expectedHash) {
   throw "Could not find $nodeZipName in official SHASUMS256.txt."
 }
 
-$actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipPath).Hash.ToLowerInvariant()
+$actualHash = Get-Sha256Hex -Path $zipPath
 if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
   throw "SHA256 mismatch for $nodeZipName. Expected $expectedHash, got $actualHash."
 }

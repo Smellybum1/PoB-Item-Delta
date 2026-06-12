@@ -20,6 +20,23 @@ function Format-Bytes {
   return "$Bytes B"
 }
 
+function Get-Sha256Hex {
+  param([string]$Path)
+
+  $resolvedPath = (Resolve-Path -LiteralPath $Path).Path
+  $stream = [System.IO.File]::OpenRead($resolvedPath)
+  try {
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+      return (($sha256.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") }) -join "")
+    } finally {
+      $sha256.Dispose()
+    }
+  } finally {
+    $stream.Dispose()
+  }
+}
+
 $repoRoot = [string](Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $packageJson = Get-Content -Path (Join-Path $repoRoot "package.json") -Raw | ConvertFrom-Json
 if ($Version) {
@@ -39,13 +56,12 @@ $assets = @(
       throw "Release asset not found: $assetPath"
     }
     $item = Get-Item -LiteralPath $assetPath
-    $hash = Get-FileHash -LiteralPath $assetPath -Algorithm SHA256
     [ordered]@{
       name = $item.Name
       path = $item.FullName
       sizeBytes = $item.Length
       size = Format-Bytes -Bytes $item.Length
-      sha256 = $hash.Hash.ToLowerInvariant()
+      sha256 = Get-Sha256Hex -Path $assetPath
       lastWriteTimeUtc = $item.LastWriteTimeUtc.ToString("o")
     }
   }
