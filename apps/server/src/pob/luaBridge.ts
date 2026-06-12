@@ -14,6 +14,7 @@ const execFileAsync = promisify(execFile);
 export const DEFAULT_POB2_INSTALL_PATH = "D:\\Games\\Path of Building Community (PoE2)";
 const DEFAULT_POB2_LAUNCHER = "Path of Building-PoE2.exe";
 const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_IDLE_SHUTDOWN_MS = 120000;
 const DEFAULT_WRAPPER_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..", "tools/pob-lua/HeadlessWrapper.lua");
 const MIRROR_DIRECTORIES = ["Classes", "Modules", "Data", "TreeData", "lua", "Assets", "SimpleGraphic"];
 const REQUIRED_RUNTIME_DIRECTORIES = ["Classes", "Modules", "Data", "TreeData", "lua"];
@@ -48,9 +49,10 @@ interface LuaBridgeStatusOptions {
   commandExists?: (command: string) => Promise<boolean>;
   canRead?: (filePath: string) => Promise<boolean>;
   checkRuntimeMirror?: (options: { forkPath: string; wrapperPath: string }) => Promise<LuaBridgeCheck>;
+  runtimeMirrorCheck?: "full" | "skip";
 }
 
-interface LuaBridgeClientOptions {
+export interface LuaBridgeClientOptions {
   command: string;
   cwd: string;
   wrapperPath: string;
@@ -61,6 +63,11 @@ export interface LuaBridgeTransport {
   start(): Promise<void>;
   request(action: string, params?: Record<string, unknown>): Promise<Record<string, unknown>>;
   stop(): Promise<void>;
+}
+
+export interface ReusableLuaBridgeRunnerOptions {
+  createTransport?: (options: LuaBridgeClientOptions) => LuaBridgeTransport;
+  idleShutdownMs?: number;
 }
 
 interface CalculateStatsWithLuaBridgeOptions {
@@ -236,7 +243,14 @@ export async function getLuaBridgeStatus(options: LuaBridgeStatusOptions = {}): 
   ];
   const runtimeMirrorCheck =
     forkOk && wrapperOk
-      ? await checkRuntimeMirror({ forkPath, wrapperPath })
+      ? options.runtimeMirrorCheck === "skip"
+        ? {
+            key: "runtimeMirror",
+            label: "Runtime mirror",
+            ok: true,
+            message: "Runtime mirror will be prepared when the bridge starts."
+          }
+        : await checkRuntimeMirror({ forkPath, wrapperPath })
       : {
           key: "runtimeMirror",
           label: "Runtime mirror",
@@ -274,23 +288,13 @@ export async function calculateStatsWithLuaBridge(options: CalculateStatsWithLua
     return unavailableLuaStatsResult(bridgeStatus, bridgeStatus.message, bridgeStatus.setupHints);
   }
 
-  const transport =
-    options.transport ??
-    new JsonLineLuaBridgeTransport({
-      command: bridgeStatus.command,
-      cwd: bridgeStatus.forkPath,
-      wrapperPath: bridgeStatus.wrapperPath,
-      timeoutMs: bridgeStatus.timeoutMs
-    });
-
   try {
-    await transport.start();
-    return readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.buildXml, options.label));
+    return await withStartedLuaBridgeTransport(bridgeStatus, options.transport, async (transport) =>
+      readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.buildXml, options.label))
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "PoB Lua bridge request failed.";
     return unavailableLuaStatsResult(bridgeStatus, message, [`PoB-native recalculation failed: ${message}`]);
-  } finally {
-    await transport.stop().catch(() => undefined);
   }
 }
 
@@ -301,28 +305,134 @@ export async function calculateStatsPairWithLuaBridge(options: CalculateStatsPai
     return { before: unavailable, after: unavailable };
   }
 
-  const transport =
-    options.transport ??
-    new JsonLineLuaBridgeTransport({
-      command: bridgeStatus.command,
-      cwd: bridgeStatus.forkPath,
-      wrapperPath: bridgeStatus.wrapperPath,
-      timeoutMs: bridgeStatus.timeoutMs
-    });
-
   let before: LuaBridgeStatsResult | null = null;
   try {
-    await transport.start();
-    before = readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.beforeBuildXml, options.beforeLabel));
-    const after = readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.afterBuildXml, options.afterLabel));
-    return { before, after };
+    return await withStartedLuaBridgeTransport(bridgeStatus, options.transport, async (transport) => {
+      before = readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.beforeBuildXml, options.beforeLabel));
+      const after = readyLuaStatsResult(bridgeStatus, await readStatsFromStartedTransport(transport, options.afterBuildXml, options.afterLabel));
+      return { before, after };
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "PoB Lua bridge request failed.";
     const unavailable = unavailableLuaStatsResult(bridgeStatus, message, [`PoB-native recalculation failed: ${message}`]);
     return { before: before ?? unavailable, after: unavailable };
-  } finally {
-    await transport.stop().catch(() => undefined);
   }
+}
+
+export class ReusableLuaBridgeRunner {
+  private readonly createTransport: (options: LuaBridgeClientOptions) => LuaBridgeTransport;
+  private readonly idleShutdownMs: number;
+  private activeKey: string | null = null;
+  private idleTimer: NodeJS.Timeout | null = null;
+  private queue: Promise<unknown> = Promise.resolve();
+  private transport: LuaBridgeTransport | null = null;
+
+  constructor(options: ReusableLuaBridgeRunnerOptions = {}) {
+    this.createTransport = options.createTransport ?? ((clientOptions) => new JsonLineLuaBridgeTransport(clientOptions));
+    this.idleShutdownMs = options.idleShutdownMs ?? DEFAULT_IDLE_SHUTDOWN_MS;
+  }
+
+  async run<T>(clientOptions: LuaBridgeClientOptions, callback: (transport: LuaBridgeTransport) => Promise<T>): Promise<T> {
+    const previous = this.queue;
+    let releaseQueue!: () => void;
+    this.queue = new Promise<void>((resolve) => {
+      releaseQueue = resolve;
+    });
+
+    await previous.catch(() => undefined);
+    try {
+      return await this.runExclusive(clientOptions, callback);
+    } finally {
+      releaseQueue();
+    }
+  }
+
+  async stop(): Promise<void> {
+    await this.stopCurrentTransport();
+  }
+
+  private async runExclusive<T>(clientOptions: LuaBridgeClientOptions, callback: (transport: LuaBridgeTransport) => Promise<T>): Promise<T> {
+    this.clearIdleTimer();
+    const key = luaBridgeClientKey(clientOptions);
+    if (this.transport && this.activeKey !== key) {
+      await this.stopCurrentTransport();
+    }
+
+    if (!this.transport) {
+      this.transport = this.createTransport(clientOptions);
+      this.activeKey = key;
+      await this.transport.start();
+    }
+
+    try {
+      const result = await callback(this.transport);
+      this.scheduleIdleStop();
+      return result;
+    } catch (error) {
+      await this.stopCurrentTransport();
+      throw error;
+    }
+  }
+
+  private scheduleIdleStop(): void {
+    if (this.idleShutdownMs <= 0) {
+      void this.stopCurrentTransport().catch(() => undefined);
+      return;
+    }
+
+    this.idleTimer = setTimeout(() => {
+      void this.stopCurrentTransport().catch(() => undefined);
+    }, this.idleShutdownMs);
+    this.idleTimer.unref?.();
+  }
+
+  private clearIdleTimer(): void {
+    if (this.idleTimer) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+  }
+
+  private async stopCurrentTransport(): Promise<void> {
+    this.clearIdleTimer();
+    const transport = this.transport;
+    this.transport = null;
+    this.activeKey = null;
+    if (transport) {
+      await transport.stop();
+    }
+  }
+}
+
+const defaultReusableLuaBridgeRunner = new ReusableLuaBridgeRunner();
+
+async function withStartedLuaBridgeTransport<T>(
+  bridgeStatus: LuaBridgeStatusResponse,
+  transport: LuaBridgeTransport | undefined,
+  callback: (transport: LuaBridgeTransport) => Promise<T>
+): Promise<T> {
+  if (!bridgeStatus.forkPath || !bridgeStatus.wrapperPath) {
+    throw new Error("PoB Lua bridge paths are not configured.");
+  }
+
+  if (transport) {
+    try {
+      await transport.start();
+      return await callback(transport);
+    } finally {
+      await transport.stop().catch(() => undefined);
+    }
+  }
+
+  return defaultReusableLuaBridgeRunner.run(
+    {
+      command: bridgeStatus.command,
+      cwd: bridgeStatus.forkPath,
+      wrapperPath: bridgeStatus.wrapperPath,
+      timeoutMs: bridgeStatus.timeoutMs
+    },
+    callback
+  );
 }
 
 class JsonLineLuaBridgeTransport implements LuaBridgeTransport {
@@ -339,6 +449,9 @@ class JsonLineLuaBridgeTransport implements LuaBridgeTransport {
   async start(): Promise<void> {
     if (this.ready) {
       return;
+    }
+    if (this.process) {
+      await this.stop();
     }
 
     const wrapperPath = await preparePoBLuaRuntimeMirror({
@@ -365,7 +478,10 @@ class JsonLineLuaBridgeTransport implements LuaBridgeTransport {
     });
     this.process.stderr.on("data", () => undefined);
     this.process.on("error", (error) => this.emitter.emit("error", error));
-    this.process.on("exit", (code, signal) => this.emitter.emit("error", new Error(`PoB Lua bridge exited: code=${code} signal=${signal}`)));
+    this.process.on("exit", (code, signal) => {
+      this.ready = false;
+      this.emitter.emit("error", new Error(`PoB Lua bridge exited: code=${code} signal=${signal}`));
+    });
 
     const banner = await this.readJsonLine();
     if (banner.ready !== true) {
@@ -487,6 +603,14 @@ function resolveWrapperPath(forkPath: string, wrapperScript: string): string {
 function readTimeout(value: string | undefined): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS;
+}
+
+function luaBridgeClientKey(options: LuaBridgeClientOptions): string {
+  return [options.command, options.cwd, options.wrapperPath, String(options.timeoutMs)].map(normalizeClientKeyPart).join("\u0000");
+}
+
+function normalizeClientKeyPart(value: string): string {
+  return process.platform === "win32" ? value.toLowerCase() : value;
 }
 
 function buildStatus(input: Omit<LuaBridgeStatusResponse, "message" | "setupHints">): LuaBridgeStatusResponse {

@@ -4,7 +4,7 @@ PoB Item Delta is a local-only Path of Building item comparison tool for Path of
 
 ## Quick Start On Windows
 
-1. Use `PoB-Item-Delta-0.1.0-portable-win-x64.zip` for easiest setup. If you use the smaller lean zip or source checkout, install Node.js LTS first.
+1. Use `PoB-Item-Delta-0.1.1-portable-win-x64.zip` for easiest setup. If you use the smaller lean zip or source checkout, install Node.js LTS first.
 2. Extract this folder somewhere writable.
 3. Double-click `tools/windows/Start-PoB-Item-Delta.cmd`.
 4. Your browser should open `http://127.0.0.1:5174`.

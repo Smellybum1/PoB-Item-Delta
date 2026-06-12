@@ -300,7 +300,8 @@ app.post("/api/temp-equip", async (request, response, next) => {
     });
     const luaBridgeStatus = await getLuaBridgeStatus({
       enabled: appSettings.enableLuaBridge,
-      forkPath: appSettings.pobInstallPath
+      forkPath: appSettings.pobInstallPath,
+      runtimeMirrorCheck: "skip"
     });
     const comparisonResult = await recalculateTemporaryBuildComparison({
       sourceBuildPath: result.sourceBuildPath,
@@ -361,7 +362,8 @@ app.post("/api/recalculate-temp-build", async (request, response, next) => {
 
     const luaBridgeStatus = await getLuaBridgeStatus({
       enabled: appSettings.enableLuaBridge,
-      forkPath: appSettings.pobInstallPath
+      forkPath: appSettings.pobInstallPath,
+      runtimeMirrorCheck: "skip"
     });
     const payload: RecalculateTempBuildResponse = await recalculateTemporaryBuildComparison({
       sourceBuildPath: body.sourceBuildPath,

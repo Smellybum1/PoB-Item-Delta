@@ -24,7 +24,7 @@ Known limits:
 
 Release builders can create lean, dependency-staged, or portable-runtime zips; see `docs/windows-launcher.md`.
 
-There is no installer yet. For 0.1.0, the portable Windows zip is the intended easy setup path.
+There is no installer yet. For 0.1.1, the portable Windows zip is the intended easy setup path.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ There is no installer yet. For 0.1.0, the portable Windows zip is the intended e
 
 ## Run From A Release Zip
 
-1. Download and extract `PoB-Item-Delta-0.1.0-portable-win-x64.zip` to a writable folder for the easiest setup. Use `PoB-Item-Delta-0.1.0.zip` only if you already have Node.js LTS installed.
+1. Download and extract `PoB-Item-Delta-0.1.1-portable-win-x64.zip` to a writable folder for the easiest setup. Use `PoB-Item-Delta-0.1.1.zip` only if you already have Node.js LTS installed.
 2. Double-click `tools/windows/Start-PoB-Item-Delta.cmd`.
 3. Wait for first-run dependency install if prompted by the lean zip launcher.
 4. Open `http://127.0.0.1:5174` if the browser does not open automatically.

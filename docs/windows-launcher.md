@@ -37,10 +37,10 @@ The launcher prefers `runtime\node\node.exe` and `runtime\node\npm.cmd` when the
 
 Current release artifacts:
 
-- `PoB-Item-Delta-0.1.0-portable-win-x64.zip`: primary friend/public zip; includes official Node.js v24.16.0 Windows x64 runtime and staged dependencies.
-- `PoB-Item-Delta-0.1.0.zip`: lean secondary zip; requires local Node.js LTS.
+- `PoB-Item-Delta-0.1.1-portable-win-x64.zip`: primary friend/public zip; includes official Node.js v24.16.0 Windows x64 runtime and staged dependencies.
+- `PoB-Item-Delta-0.1.1.zip`: lean secondary zip; requires local Node.js LTS.
 
-There is no Electron/Tauri installer for 0.1.0. The portable Windows zip is the current easiest setup path; a true installer should wait until player feedback shows a need for shortcuts, uninstall support, auto-update, signing polish, or desktop-window behavior.
+There is no Electron/Tauri installer yet. The portable Windows zip is the current easiest setup path; a true installer should wait until player feedback shows a need for shortcuts, uninstall support, auto-update, signing polish, or desktop-window behavior.
 
 ## Start
 

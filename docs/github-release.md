@@ -4,9 +4,9 @@ Use this when publishing a PoB Item Delta release to GitHub. Publishing is an ex
 
 ## Current Release Candidate
 
-- Version: `0.1.0`
-- Primary zip asset: `output/releases/PoB-Item-Delta-0.1.0-portable-win-x64.zip`
-- Secondary lean zip asset: `output/releases/PoB-Item-Delta-0.1.0.zip`
+- Version: `0.1.1`
+- Primary zip asset: `output/releases/PoB-Item-Delta-0.1.1-portable-win-x64.zip`
+- Secondary lean zip asset: `output/releases/PoB-Item-Delta-0.1.1.zip`
 - QA evidence: `docs/ai/release-qa-2026-06-11.md`
 - Support-inspector packaging QA: `docs/ai/release-qa-2026-06-12-support-inspectors.md`
 - Changelog: `CHANGELOG.md`
@@ -21,7 +21,7 @@ npm run build
 npm run release:zip -- -SkipBuild
 npm run release:zip:portable -- -SkipBuild
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-ReleasePreflight.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-ReleasePreflight.ps1 -ZipPath output/releases/PoB-Item-Delta-0.1.0-portable-win-x64.zip
+powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-ReleasePreflight.ps1 -ZipPath output/releases/PoB-Item-Delta-0.1.1-portable-win-x64.zip
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Test-PoB-Item-Delta-GitHubReleaseReadiness.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/Get-PoB-Item-Delta-ReleaseAssets.ps1
 npm run release:notes
@@ -54,7 +54,7 @@ Current local preflight evidence:
 - Lean zip: latest local preflight passed with required repo files and archive entries present.
 - Portable zip: latest local preflight passed with required repo files, archive entries, staged dependencies, and portable Node runtime present.
 - Portable support smoke: passed with `.\runtime\node\npm.cmd run inspect:item-report --`.
-- GitHub release readiness helper reports `ready-for-approval` when local checks pass, `v0.1.0` is available locally and on `origin`, generated artifacts are not visible to git, the build coverage scanner smoke passes, the release notes preview includes expected assets/checksums, and only external writes remain. Use `-SkipRemote` only for offline dry-runs.
+- GitHub release readiness helper reports `ready-for-approval` when local checks pass, `v0.1.1` is available locally and on `origin`, generated artifacts are not visible to git, the build coverage scanner smoke passes, the release notes preview includes expected assets/checksums, and only external writes remain. Use `-SkipRemote` only for offline dry-runs.
 - Publish packet helper prints the exact approval-gated commit/push/CI/tag/release handoff commands plus current assets/checksums without executing external writes.
 - GitHub CI prints the publish packet with `-SkipRemote` so the handoff format is checked after push without publishing anything.
 
@@ -80,9 +80,9 @@ Before release publishing:
 5. Commit the release candidate.
 6. Push the branch to `origin`.
 7. Wait for the GitHub `CI` workflow to pass on the pushed branch.
-8. Create and push tag `v0.1.0`.
+8. Create and push tag `v0.1.1`.
 
-For the first publish, `origin/main` may not exist yet; the readiness helper reports this as informational. A remote `v0.1.0` tag already existing is a blocker.
+For the first publish, `origin/main` may not exist yet; the readiness helper reports this as informational. A remote `v0.1.1` tag already existing is a blocker.
 
 Do not run the push or tag commands without explicit approval.
 
@@ -93,34 +93,25 @@ After explicit approval, `npm run release:packet` prints the command sequence an
 Title:
 
 ```text
-PoB Item Delta 0.1.0
+PoB Item Delta 0.1.1
 ```
 
 Body:
 
 ```markdown
-Initial local Windows MVP for comparing Path of Exile 2 items against the current saved Path of Building Community PoE2 build.
+Patch release for the PoB-native calculation bridge.
 
-Highlights:
+Fixes:
+- Keeps the PoB Lua bridge warm between native recalculations so repeated item comparisons do not pay the full PoB startup cost each time.
+- Skips duplicate runtime mirror preflight work on the hot comparison path. Setup diagnostics still run the full readiness checks.
+
+Still included from 0.1.0:
 - Current saved PoB2 build detection.
 - Pasted trade item text to temporary build copy.
 - PoB Lua bridge recalculation when configured, with XML fallback.
 - DPS, average hit, crit, speed, mana, ES/life, resist, attribute, and spirit deltas.
-- Target skill selector, weapon swap slots, compare list, and decision warnings.
-- Safe Save over original, Save as new build, backups, restore, and Open temp build in PoB.
-- Read-only saved-build scanner for target-skill and weapon-swap support cases, with common Documents/OneDrive auto-detection, nested-folder scanning, and unreadable XML warnings.
-- Build coverage scanner can produce a path-sanitized Markdown support report.
-- In-app Help & Diagnostics can copy the same kind of path-sanitized build scan for the current saved build folder.
-- Local support inspectors for copied parser, build-validation, and CoC model validation reports.
-- Item report flow and inspector can produce fixture/test hints and a copyable GitHub issue snippet from exact pasted samples, including successful parses worth adding as fixtures.
-- Build-validation and CoC inspectors can produce copyable GitHub issue snippets for repeatable real-build evidence.
-- CoC validation reports include repeat-sample rows, with inspector aggregate verdicts for completed samples.
-- Optional CoC Frostbolt/Frost Wall assumption model.
-- Copyable build validation report for target-skill, weapon-set, slot, and recalculation support.
-- Copyable CoC model validation report for repeatable observation notes.
-- Local-only Windows launcher and stop helper with friend-friendly failure guidance.
-- Optional larger dependency-staged/portable-runtime packaging path for release builders.
-- Installer decision: no Electron/Tauri shell for 0.1.0; use the portable Windows zip first and revisit a true installer after user feedback.
+- Safe save flows, backups, restore, and Open temp build in PoB.
+- Local-only Windows launcher and portable-runtime zip.
 
 Requirements:
 - Windows.
@@ -142,8 +133,8 @@ Known limits:
 Attach:
 
 ```text
-output/releases/PoB-Item-Delta-0.1.0-portable-win-x64.zip
-output/releases/PoB-Item-Delta-0.1.0.zip
+output/releases/PoB-Item-Delta-0.1.1-portable-win-x64.zip
+output/releases/PoB-Item-Delta-0.1.1.zip
 ```
 
 Attach these files to the GitHub release; do not commit the `output/` folder to the repository.

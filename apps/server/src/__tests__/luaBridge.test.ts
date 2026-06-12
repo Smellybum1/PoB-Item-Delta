@@ -12,6 +12,8 @@ import {
   checkPoBLuaRuntimeMirrorReadiness,
   getLuaBridgeStatus,
   preparePoBLuaRuntimeMirror,
+  ReusableLuaBridgeRunner,
+  type LuaBridgeClientOptions,
   type LuaBridgeTransport
 } from "../pob/luaBridge.js";
 
@@ -131,6 +133,29 @@ describe("getLuaBridgeStatus", () => {
     expect(status.canAttemptStart).toBe(false);
     expect(status.checks.find((check) => check.key === "runtimeMirror")?.ok).toBe(false);
     expect(status.setupHints.join(" ")).toContain("full Path of Building Community");
+  });
+
+  it("can skip the runtime mirror preflight for hot calculation paths", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "pob-item-delta-lua-"));
+    await mkdir(root, { recursive: true });
+    await writeFile(path.join(root, "HeadlessWrapper.lua"), "-- bridge fixture", "utf8");
+
+    const status = await getLuaBridgeStatus({
+      enabled: true,
+      env: {
+        POB_CMD: process.execPath,
+        POB_FORK_PATH: root
+      },
+      commandExists: async () => true,
+      runtimeMirrorCheck: "skip",
+      checkRuntimeMirror: async () => {
+        throw new Error("runtime mirror preflight should be skipped");
+      }
+    });
+
+    expect(status.status).toBe("configured");
+    expect(status.canAttemptStart).toBe(true);
+    expect(status.checks.find((check) => check.key === "runtimeMirror")?.message).toContain("when the bridge starts");
   });
 
   it("supports a wrapper script outside the PoB fork path", async () => {
@@ -341,6 +366,56 @@ describe("calculateStatsPairWithLuaBridge", () => {
   });
 });
 
+describe("ReusableLuaBridgeRunner", () => {
+  it("keeps one started bridge available for repeated matching requests", async () => {
+    const transports: FakeLuaTransport[] = [];
+    const runner = new ReusableLuaBridgeRunner({
+      idleShutdownMs: 60000,
+      createTransport: () => {
+        const transport = new FakeLuaTransport([{ ok: true }, { ok: true }]);
+        transports.push(transport);
+        return transport;
+      }
+    });
+
+    try {
+      await runner.run(clientOptions(), (transport) => transport.request("ping"));
+      await runner.run(clientOptions(), (transport) => transport.request("ping"));
+
+      expect(transports).toHaveLength(1);
+      expect(transports[0]?.startCount).toBe(1);
+      expect(transports[0]?.stopCount).toBe(0);
+    } finally {
+      await runner.stop();
+    }
+
+    expect(transports[0]?.stopCount).toBe(1);
+  });
+
+  it("stops the warm bridge when the configured command changes", async () => {
+    const transports: FakeLuaTransport[] = [];
+    const runner = new ReusableLuaBridgeRunner({
+      idleShutdownMs: 60000,
+      createTransport: () => {
+        const transport = new FakeLuaTransport([{ ok: true }]);
+        transports.push(transport);
+        return transport;
+      }
+    });
+
+    try {
+      await runner.run(clientOptions({ command: "first.exe" }), (transport) => transport.request("ping"));
+      await runner.run(clientOptions({ command: "second.exe" }), (transport) => transport.request("ping"));
+
+      expect(transports).toHaveLength(2);
+      expect(transports[0]?.stopCount).toBe(1);
+      expect(transports[1]?.startCount).toBe(1);
+    } finally {
+      await runner.stop();
+    }
+  });
+});
+
 class FakeLuaTransport implements LuaBridgeTransport {
   started = false;
   stopped = false;
@@ -391,5 +466,15 @@ function configuredBridgeStatus(): LuaBridgeStatusResponse {
     timeoutMs: 1000,
     checks: [],
     setupHints: []
+  };
+}
+
+function clientOptions(overrides: Partial<LuaBridgeClientOptions> = {}): LuaBridgeClientOptions {
+  return {
+    command: process.execPath,
+    cwd: os.tmpdir(),
+    wrapperPath: path.join(os.tmpdir(), "HeadlessWrapper.lua"),
+    timeoutMs: 1000,
+    ...overrides
   };
 }

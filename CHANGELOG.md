@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 - 2026-06-12
+
+### Fixed
+
+- Kept the PoB Lua bridge warm between native recalculations so repeated item comparisons do not pay the full PoB startup cost each time.
+- Skipped duplicate runtime mirror preflight work on the hot comparison path; setup diagnostics still run the full readiness checks.
+
 ## 0.1.0 - 2026-06-11
 
 Initial local MVP release candidate.

@@ -1,6 +1,6 @@
 {
   "name": "@pob-item-delta/server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,7 @@
     "inspect:build-report": "node dist/tools/inspectBuildValidationReport.js"
   },
   "dependencies": {
-    "@pob-item-delta/shared": "0.1.0",
+    "@pob-item-delta/shared": "0.1.1",
     "express": "^5.1.0",
     "fast-xml-parser": "^5.3.2"
   },
